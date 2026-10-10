@@ -1,16 +1,18 @@
-import streamlit as st
-from PyPDF2 import PdfReader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 import os
-from dotenv import load_dotenv
-
-from langchain_google_genai.embeddings import GoogleGenerativeAIEmbeddings
-from langchain_google_genai.chat_models import ChatGoogleGenerativeAI
+import streamlit as st
 import google.generativeai as genai
 
-from langchain.vectorstores import FAISS
+from dotenv import load_dotenv
+from PyPDF2 import PdfReader
+
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_google_genai import (
+    GoogleGenerativeAIEmbeddings,
+    ChatGoogleGenerativeAI,
+)
+from langchain_community.vectorstores import FAISS
 from langchain.chains.question_answering import load_qa_chain
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 
 # Load environment variables
 load_dotenv()
