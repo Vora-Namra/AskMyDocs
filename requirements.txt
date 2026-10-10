@@ -1,8 +1,6 @@
-
 streamlit
 pypdf
 langchain-core
-langchain-classic
 langchain-text-splitters
 langchain-google-genai
 langchain-community
