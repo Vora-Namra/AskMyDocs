@@ -77,7 +77,7 @@ Question: {question}
 
 Answer:"""
 
-    model = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.2)
+    model = ChatGoogleGenerativeAI(model="gemini-3.8-flash", temperature=0.2)
     prompt_template = PromptTemplate(template=prompt, input_variables=["context", "question"])
     chain = load_qa_chain(llm=model, prompt=prompt_template, chain_type="stuff")
     return chain
