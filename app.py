@@ -36,20 +36,33 @@ def get_pdf_text(pdf_docs):
     return text
 
 # Function to split large text into chunks
+
 def get_chunks(text):
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
-    chunks = text_splitter.split_text(text)
-    return chunks
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1500,
+        chunk_overlap=200,
+        length_function=len
+    )
+    return text_splitter.split_text(text)
+
 
 # Create and save the vector store
 
-def get_vector_store(chunks):
-    embedding = GoogleGenerativeAIEmbeddings(
-        model="gemini-embedding-001"
-    )
 
-    vector_store = FAISS.from_texts(chunks, embedding)
-    vector_store.save_local("faiss_index")
+def get_vector_store(chunks):
+    try:
+        embedding = GoogleGenerativeAIEmbeddings(
+            model="gemini-embedding-001"
+        )
+
+        vector_store = FAISS.from_texts(chunks, embedding)
+        vector_store.save_local("faiss_index")
+
+    except Exception as e:
+        print("Embedding error:", repr(e))
+        st.error("Failed to create embeddings.")
+        st.code(f"{type(e).__name__}: {e}")
+        raise
 
 # Load the LLM chain with custom prompt
 def get_chain():
