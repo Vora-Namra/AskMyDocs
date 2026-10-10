@@ -1,9 +1,8 @@
+
 import os
 import streamlit as st
-import google.generativeai as genai
-
-from dotenv import load_dotenv
 from PyPDF2 import PdfReader
+from dotenv import load_dotenv
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_genai import (
@@ -11,12 +10,21 @@ from langchain_google_genai import (
     ChatGoogleGenerativeAI,
 )
 from langchain_community.vectorstores import FAISS
-from langchain.chains.question_answering import load_qa_chain
-from langchain_core.prompts import PromptTemplate
 
 # Load environment variables
+
 load_dotenv()
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+try:
+    GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+except Exception:
+    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+if not GOOGLE_API_KEY:
+    st.error("Please configure your GOOGLE_API_KEY.")
+    st.stop()
+
+os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
 
 # Function to read text from PDFs
 def get_pdf_text(pdf_docs):
@@ -36,8 +44,12 @@ def get_chunks(text):
     return chunks
 
 # Create and save the vector store
+
 def get_vector_store(chunks):
-    embedding = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    embedding = GoogleGenerativeAIEmbeddings(
+        model="gemini-embedding-001"
+    )
+
     vector_store = FAISS.from_texts(chunks, embedding)
     vector_store.save_local("faiss_index")
 
@@ -60,14 +72,47 @@ Answer:"""
     return chain
 
 # Process user's question and show result
-def user_input(user_question):
-    embedding = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-    new_db = FAISS.load_local("faiss_index", embedding, allow_dangerous_deserialization=True)
-    docs = new_db.similarity_search(user_question)
-    chain = get_chain()
 
-    response = chain({"input_documents": docs, "question": user_question}, return_only_outputs=True)
-    st.write("💬 **Reply:**", response["output_text"])
+def user_input(user_question):
+    embedding = GoogleGenerativeAIEmbeddings(
+        model="gemini-embedding-001"
+    )
+
+    new_db = FAISS.load_local(
+        "faiss_index",
+        embedding,
+        allow_dangerous_deserialization=True
+    )
+
+    docs = new_db.similarity_search(user_question, k=4)
+
+    context = "\n\n".join(
+        doc.page_content for doc in docs
+    )
+
+    prompt = f"""
+Answer the question using only the provided context.
+If the answer is unavailable in the context, say:
+"Answer is not available in the provided context."
+
+Do not invent facts.
+
+Context:
+{context}
+
+Question: {user_question}
+
+Answer:
+"""
+
+    model = ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash",
+        temperature=0.2
+    )
+
+    response = model.invoke(prompt)
+
+    st.write("💬 **Reply:**", response.content)
 
 # Streamlit UI
 def main():
